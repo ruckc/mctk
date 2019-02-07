@@ -28,6 +28,12 @@ pipeline {
                 sh "cargo clippy --all"
             }
         }
+        stage('tarpaulin') {
+            steps {
+                sh "cargo tarpaulin --out Xml"
+                cobertura coberturaReportFile: 'cobertura.xml'
+            }
+        }
         stage('rpm') {
             steps {
                 sh "cargo rpm init"
