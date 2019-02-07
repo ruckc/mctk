@@ -2,20 +2,15 @@
 
 FAILED=0
 FMTRESULT=0
-diff=""
-for file in $(git diff --name-only --cached);
-do
-	if [ ${file: -3} == ".rs" ]; then
-        diff="$diff$(cargo fmt -- --skip-children --write-mode=diff $file)"
-	fi
-done
+diff="$(cargo fmt -- --check $file)"
+
 if grep --quiet "^[-+]" <<< "$diff"; then
     FMTRESULT=1
 fi
 
 if [ ${FMTRESULT} != 0 ]; then
   FAILED=1
-  echo "${FAILURE}\n"
+  echo "${FAILURE}"
   echo "${diff}" | sed 's/Using rustfmt config file.*$/d/'
 fi
 
