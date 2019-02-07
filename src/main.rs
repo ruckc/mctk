@@ -1,5 +1,4 @@
 #![allow(while_true)]
-
 extern crate clap;
 extern crate my_pretty_failure;
 
@@ -12,6 +11,7 @@ use std::time::Duration;
 
 mod lib;
 
+#[cfg_attr(tarpaulin, skip)]
 fn main() {
     let matches = App::new("multicast toolkit")
         .version(env!("CARGO_PKG_VERSION"))
@@ -89,14 +89,11 @@ fn main() {
         let packet_size: u16 = matches.value_of("packet-size").unwrap().parse().unwrap();
         let destination_addr = SocketAddr::new(group, port);
         println!("Running a sender to {}", destination_addr);
-        let socket = lib::new_sender().expect("could not create sender");
+        let socket: socket2::Socket = lib::new_sender().expect("could not create sender");
         let mut count: u32 = 0;
         while true {
             count += 1;
-            let message = generate_message(packet_size, count);
-            socket
-                .send_to(message.as_bytes(), &destination_addr)
-                .expect("could not send_to");
+            lib::send_message(&socket, destination_addr, packet_size, count);
             sleep(sleep_interval);
         }
     } else if let Some(matches) = matches.subcommand_matches("receive") {
@@ -123,10 +120,4 @@ fn main() {
             }
         }
     }
-}
-
-fn generate_message(size: u16, count: u32) -> String {
-    let mut message = format!("test multicast message {} of length {} ", count, size);
-    message.push_str(&"x".repeat((size as usize) - message.len()));
-    message
 }

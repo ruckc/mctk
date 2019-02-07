@@ -36,14 +36,8 @@ pub fn join_multicast(addr: SocketAddr) -> io::Result<UdpSocket> {
 
     let socket = new_socket()?;
 
-    match ip_addr {
-        IpAddr::V4(ref mdns_v4) => {
-            // join to the multicast address, with all interfaces
-            socket.join_multicast_v4(mdns_v4, &Ipv4Addr::new(0, 0, 0, 0))?;
-        }
-        IpAddr::V6(ref _mdns_v6) => {
-            // unsupported
-        }
+    if let IpAddr::V4(ip) = ip_addr {
+        socket.join_multicast_v4(&ip, &Ipv4Addr::new(0, 0, 0, 0))?;
     }
 
     // bind us to the socket address.
@@ -53,7 +47,7 @@ pub fn join_multicast(addr: SocketAddr) -> io::Result<UdpSocket> {
     Ok(socket.into_udp_socket())
 }
 
-pub fn new_sender() -> io::Result<UdpSocket> {
+pub fn new_sender() -> io::Result<Socket> {
     let socket = new_socket()?;
 
     socket.set_multicast_if_v4(&Ipv4Addr::new(0, 0, 0, 0))?;
@@ -63,6 +57,18 @@ pub fn new_sender() -> io::Result<UdpSocket> {
         0,
     )))?;
 
-    // convert to standard sockets...
-    Ok(socket.into_udp_socket())
+    Ok(socket)
+}
+
+pub fn send_message(socket: &Socket, destination: SocketAddr, packet_size: u16, msgid: u32) {
+    let message = generate_message(packet_size, msgid);
+    socket
+        .send_to(message.as_bytes(), &SockAddr::from(destination))
+        .expect(&format!("could not send {} to {}", message, destination));
+}
+
+pub fn generate_message(size: u16, count: u32) -> String {
+    let mut message = format!("test multicast message {} of length {} ", count, size);
+    message.push_str(&"x".repeat((size as usize) - message.len()));
+    message
 }
