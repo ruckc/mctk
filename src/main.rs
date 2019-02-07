@@ -1,0 +1,132 @@
+#![allow(while_true)]
+
+extern crate clap;
+extern crate my_pretty_failure;
+
+use clap::{App, Arg, SubCommand};
+use my_pretty_failure::myprettyfailure;
+
+use std::net::{IpAddr, SocketAddr};
+use std::thread::sleep;
+use std::time::Duration;
+
+mod lib;
+
+fn main() {
+    let matches = App::new("multicast toolkit")
+        .version(env!("CARGO_PKG_VERSION"))
+        .author("Curtis Ruck <curtis@ruck.io>")
+        .about("supports testing of multicast routing and packet flow")
+        .subcommand(
+            SubCommand::with_name("send")
+                .about("Runs a multicast sender")
+                .arg(
+                    Arg::with_name("group")
+                        .short("g")
+                        .long("group")
+                        .value_name("group")
+                        .help("Sets the multicast group")
+                        .takes_value(true)
+                        .required(true),
+                )
+                .arg(
+                    Arg::with_name("port")
+                        .short("p")
+                        .long("port")
+                        .value_name("port")
+                        .help("Sets the multicast port")
+                        .default_value("8201")
+                        .takes_value(true),
+                )
+                .arg(
+                    Arg::with_name("interval")
+                        .short("i")
+                        .long("interval")
+                        .value_name("milliseconds")
+                        .help("Sets the sender's packet transmission interval")
+                        .default_value("1000")
+                        .takes_value(true),
+                )
+                .arg(
+                    Arg::with_name("packet-size")
+                        .short("s")
+                        .long("packet-size")
+                        .value_name("bytes")
+                        .help("Sets the sender's packet size")
+                        .default_value("1000")
+                        .takes_value(true),
+                ),
+        )
+        .subcommand(
+            SubCommand::with_name("receive")
+                .about("Runs a multicast receiver")
+                .arg(
+                    Arg::with_name("group")
+                        .short("g")
+                        .long("group")
+                        .value_name("group")
+                        .help("Sets the multicast group")
+                        .takes_value(true)
+                        .required(true),
+                )
+                .arg(
+                    Arg::with_name("port")
+                        .short("p")
+                        .long("port")
+                        .value_name("port")
+                        .help("Sets the multicast port")
+                        .default_value("8201")
+                        .takes_value(true),
+                ),
+        )
+        .get_matches();
+
+    if let Some(matches) = matches.subcommand_matches("send") {
+        let group: IpAddr = matches.value_of("group").unwrap().parse().unwrap();
+        let port: u16 = matches.value_of("port").unwrap().parse().unwrap();
+        let sleep_interval: Duration =
+            Duration::from_millis(matches.value_of("interval").unwrap().parse().unwrap());
+        let packet_size: u16 = matches.value_of("packet-size").unwrap().parse().unwrap();
+        let destination_addr = SocketAddr::new(group, port);
+        println!("Running a sender to {}", destination_addr);
+        let socket = lib::new_sender().expect("could not create sender");
+        let mut count: u32 = 0;
+        while true {
+            count += 1;
+            let message = generate_message(packet_size, count);
+            socket
+                .send_to(message.as_bytes(), &destination_addr)
+                .expect("could not send_to");
+            sleep(sleep_interval);
+        }
+    } else if let Some(matches) = matches.subcommand_matches("receive") {
+        let group: IpAddr = matches.value_of("group").unwrap().parse().unwrap();
+        let port: u16 = matches.value_of("port").unwrap().parse().unwrap();
+        println!(
+            "Listening for {}:{}",
+            matches.value_of("group").unwrap(),
+            matches.value_of("port").unwrap()
+        );
+        let destination_addr = SocketAddr::new(group, port);
+        let mut buf = [0u8; 65536]; //receive buffer
+        let listener =
+            lib::join_multicast(destination_addr).expect("failed to create multicast listener");
+        while true {
+            match listener.recv_from(&mut buf) {
+                Ok((len, remote_addr)) => {
+                    let data = &buf[..len];
+                    println!("{} sent {}", remote_addr, String::from_utf8_lossy(data));
+                }
+                Err(err) => {
+                    eprintln!("an error occurred: {}", myprettyfailure(&err));
+                }
+            }
+        }
+    }
+}
+
+fn generate_message(size: u16, count: u32) -> String {
+    let mut message = format!("test multicast message {} of length {} ", count, size);
+    message.push_str(&"x".repeat((size as usize) - message.len()));
+    message
+}

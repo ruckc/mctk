@@ -1,0 +1,19 @@
+[package]
+name = "mctk"
+version = "0.1.2"
+authors = ["curtis@ruck.io"]
+edition = "2018"
+description = "multicast toolkit (mctk)"
+license = "AGPL-3.0-or-later"
+
+[dependencies]
+socket2 = { version = "0.3.8", features = ["reuseport"] }
+clap = { version = "2.32.0", features = ["suggestions","color","wrap_help"] }
+my-pretty-failure = "0.1.2"
+
+
+[package.metadata.rpm.cargo]
+buildflags = ["--release"]
+
+[package.metadata.rpm.targets]
+mctk = { path = "/usr/bin/mctk" }
