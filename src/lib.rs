@@ -47,10 +47,12 @@ pub fn join_multicast(addr: SocketAddr) -> io::Result<UdpSocket> {
     Ok(socket.into_udp_socket())
 }
 
-pub fn new_sender() -> io::Result<Socket> {
+pub fn new_sender(ttl: u8) -> io::Result<Socket> {
     let socket = new_socket()?;
 
     socket.set_multicast_if_v4(&Ipv4Addr::new(0, 0, 0, 0))?;
+
+    socket.set_multicast_ttl_v4(u32::from(ttl))?;
 
     socket.bind(&SockAddr::from(SocketAddr::new(
         Ipv4Addr::new(0, 0, 0, 0).into(),
@@ -64,7 +66,7 @@ pub fn send_message(socket: &Socket, destination: SocketAddr, packet_size: u16, 
     let message = generate_message(packet_size, msgid);
     socket
         .send_to(message.as_bytes(), &SockAddr::from(destination))
-        .expect(&format!("could not send {} to {}", message, destination));
+        .expect("Unable to send message");
 }
 
 pub fn generate_message(size: u16, count: u32) -> String {

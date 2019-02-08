@@ -55,6 +55,15 @@ fn main() {
                         .help("Sets the sender's packet size")
                         .default_value("1000")
                         .takes_value(true),
+                )
+                .arg(
+                    Arg::with_name("ttl")
+                        .short("t")
+                        .long("ttl")
+                        .value_name("ttl")
+                        .help("Sets the sender's time to live value")
+                        .takes_value(true)
+                        .default_value("2"),
                 ),
         )
         .subcommand(
@@ -87,9 +96,10 @@ fn main() {
         let sleep_interval: Duration =
             Duration::from_millis(matches.value_of("interval").unwrap().parse().unwrap());
         let packet_size: u16 = matches.value_of("packet-size").unwrap().parse().unwrap();
+        let ttl: u8 = matches.value_of("ttl").unwrap().parse().unwrap();
         let destination_addr = SocketAddr::new(group, port);
         println!("Running a sender to {}", destination_addr);
-        let socket: socket2::Socket = lib::new_sender().expect("could not create sender");
+        let socket: socket2::Socket = lib::new_sender(ttl).expect("could not create sender");
         let mut count: u32 = 0;
         while true {
             count += 1;

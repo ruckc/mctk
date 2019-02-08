@@ -9,7 +9,7 @@ fn test_multicast() {
 
     let mut rcvbuf = [0u8; 65536];
 
-    let sender = mctk::new_sender().expect("unable to create sender");
+    let sender = mctk::new_sender(1).expect("unable to create sender");
     let listener = mctk::join_multicast(sockaddr).expect("unable to create multicast listener");
 
     mctk::send_message(&sender, sockaddr, 50, 17);

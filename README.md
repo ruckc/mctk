@@ -54,6 +54,7 @@ OPTIONS:
     -i, --interval <milliseconds>    Sets the sender's packet transmission interval [default: 1000]
     -s, --packet-size <bytes>        Sets the sender's packet size [default: 1000]
     -p, --port <port>                Sets the multicast port [default: 8201]
+    -t, --ttl <ttl>                  Sets the sender's time to live value [default: 2]
 ```
 ```bash
 $ mctk help receive
