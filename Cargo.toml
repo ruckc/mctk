@@ -7,7 +7,7 @@ description = "multicast toolkit (mctk)"
 license = "AGPL-3.0-or-later"
 
 [dependencies]
-socket2 = { version = "0.3.8", features = ["reuseport"] }
+socket2 = { version = "0.3.16", features = ["reuseport"] }
 clap = { version = "2.32.0", features = ["suggestions","color","wrap_help"] }
 my-pretty-failure = "0.1.2"
 
